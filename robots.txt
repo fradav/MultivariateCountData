@@ -1,1 +1,0 @@
-Sitemap: https://fradav.github.io/MultivariateCountData/sitemap.xml
