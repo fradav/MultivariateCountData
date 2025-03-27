@@ -297,6 +297,29 @@ fall into an infinite cycle. In this situation the algorithm is stopped,
 and the best solution according to BIC among the solution of the cycle
 is kept.
 
+
+The following pseudo-code summarizes our stepwise algorithm:
+
+`ALGORITHM Stepwise`\
+$\quad$`BEGIN`\
+$\quad$$\quad$`initialize` $X^C$\
+$\quad$$\quad$`WHILE` $X^C$ `changes:`\
+$\quad$$\quad$$\quad$`- for all variable `$X_j$` which are not in `$X^C$\
+$\quad$$\quad$$\quad$$\quad$`- estimate `${\cal M}_1$` on `$X^C \cup X_j$` and select the best `$G$\
+$\quad$$\quad$$\quad$$\quad$`- estimate `${\cal M}_2$` with the model for `$X^C$` (with G selected at the previous step)`\
+$\quad$$\quad$$\quad$$\quad$`and a Poisson regression for `$X_j$` given `$X^C$\
+$\quad$$\quad$$\quad$$\quad$`- add `$X_j$` in `$X^C$` if `$BIC_{{\cal M}_1}>BIC_{{\cal M}_2}$\
+$\quad$$\quad$$\quad$`- for each `$X_j$` in `$X^C$\
+$\quad$$\quad$$\quad$$\quad$`- estimate `${\cal M}_2$` on `$X^C\setminus X_j$`, select the best `$G$\
+$\quad$$\quad$$\quad$$\quad$`and use a Poisson regression for `$X_j$` given `$X^C\setminus X_j$\
+$\quad$$\quad$$\quad$$\quad$`- estimate `${\cal M}_1$` on `$X^C$` (with G selected at the previous step)`\
+$\quad$$\quad$$\quad$$\quad$`- remove `$X_j$` from `$X^C$` if `$BIC_{{\cal M}_2}>BIC_{{\cal M}_1}$\
+$\quad$$\quad$$\quad$`- test for infinite loop`\
+$\quad$$\quad$`ENDWHILE`\
+$\quad$`return `$X^C$` and `${\cal M}_1$` estimate`\
+$\quad$`END`
+
+
 # Simulation study
 
 In this section, we evaluate the proposed variable selection method
@@ -832,7 +855,7 @@ The level of variable selection is determined by the relative performance of the
 
 The proposed method is based on a conditionally independent Poisson mixture model for the selected variables. It could be argued that the conditional independence assumption is unrealistic in the application. @Hand2001 consider the implication of incorrectly assuming conditional independence in a classification setting and show that it can make the group membership probabilities over confident. Furthermore, in the conditional independent Poisson mixture model, the number of clusters can be upwardly biased, where extra clusters are included to model dependence in the data. The approach taken in the paper could be extended to use other multivariate count distributions, including multivariate distributions without the conditional independence assumption [eg. @Karlis2018; @Karlis_2007; @Inouye_2017].
 
-The code for the proposed approach will be made available as an R package. 
+The code for the proposed approach is available as an R package at [https://github.com/JuJacques/MultivariateCountData](https://github.com/JuJacques/MultivariateCountData). 
 
 
 # Acknowlegements
