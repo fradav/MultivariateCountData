@@ -32,8 +32,7 @@ on probabilistic models. In this work, we use model-based clustering which has b
 Modern data are often high-dimensional, that is the number of variables is
 often large. Among these variables, some are useful for the task of
 interest, some are useless for the task of interest and some others are useful but redundant.
-There is a need to select only the relevant variables, and that
-whatever is the task. Variable selection methods are widespread for supervised learning tasks, in particular to avoid overfitting. However, variable selection methods are less well developed for unsupervised learning tasks, such as clustering. Recently, several
+There is a need to select only the relevant variables, and that, whatever is the task. Variable selection methods are widespread for supervised learning tasks, in particular to avoid overfitting. However, variable selection methods are less well developed for unsupervised learning tasks, such as clustering. Recently, several
 methods have been proposed for selecting the relevant variables in
 model-based clustering; we refer to @Fop_2018 and @McParlandMurphy2018 for recent detailed surveys.
 
@@ -107,7 +106,7 @@ where $\phi(x,\lambda)=\exp(-\lambda)\lambda^{x}/x!$, the Poisson probability ma
 
 Due to form of the mixture distribution, there are no closed form for the maximum
 likelihood estimators, and an iterative EM algorithm needs to be used
-[@Dempster_1977] to maximize the likelihood. The EM algorithm consists, starts from an initial
+[@Dempster_1977] to maximize the likelihood. The EM algorithm starts from an initial
 value $\theta^{(0)}$ for the model parameter, and alternates the two
 following steps until convergence of the likelihood.
 
@@ -131,8 +130,8 @@ where $\hat\theta$ is the maximum likelihood estimate of the model parameters; m
 # Variable selection
 
 We develop a model-based clustering method with variable selection for
-multivariate count data. The method follows the approach of [@RafteryDean2006;
-@MaugisEtAl2009] for continuous data and [@DeanRaftery2010; @Fop_2017]
+multivariate count data. The method follows the approach of @RafteryDean2006 and
+@MaugisEtAl2009 for continuous data and @DeanRaftery2010 and @Fop_2017
 for categorical data. It consists in a stepwise model comparison
 approach where variables are added and removed from a set of clustering
 variables. 
@@ -164,7 +163,7 @@ variables through a Poisson GLM, that is,
 $$
 \begin{aligned}
 X_n^C &\sim \sum_{g=1}^{G}\tau_g \prod_{m\in C} {\rm Poisson}(\lambda_{gm})\\
-X_n^P| (X_n^C=x_n^C, Z_{ng}=1) & \sim  {\rm PoissonGLM}(x_n^{(C)}),
+X_n^P| (X_n^C=x_n^C, Z_{ng}=1) & \sim  {\rm PoissonGLM}(x_n^{C}),
 \end{aligned}
 $$
 where Poisson GLM states that
@@ -177,6 +176,7 @@ model, a standard stepwise variable selection approach (using BIC as the variabl
 Thus, the proposed variable $X_n^P$ will be dependent on
 only a subset $X_n^R$ of the clustering variables $X_n^C$.
 We note that $G$ is fixed in the non-clustering model, because an optimal value for $G$ is previously chosen. 
+The other variables $X_n^{O}$ are assumed to be conditionally independent of $Z_n$ given $X_n^{C}$ and $X_n^{P}$.
 
 The clustering and non-clustering models are represented as graphical
 models in @fig-graphical.
@@ -853,7 +853,7 @@ The level of variable selection is determined by the relative performance of the
 
 The proposed method is based on a conditionally independent Poisson mixture model for the selected variables. It could be argued that the conditional independence assumption is unrealistic in the application. @Hand2001 consider the implication of incorrectly assuming conditional independence in a classification setting and show that it can make the group membership probabilities over confident. Furthermore, in the conditional independent Poisson mixture model, the number of clusters can be upwardly biased, where extra clusters are included to model dependence in the data. The approach taken in the paper could be extended to use other multivariate count distributions, including multivariate distributions without the conditional independence assumption [eg. @Karlis2018; @Karlis_2007; @Inouye_2017].
 
-The code for the proposed approach is available as an R package at [https://github.com/JuJacques/MultivariateCountData](https://github.com/JuJacques/MultivariateCountData). 
+The code for the proposed approach is available as an R package [poissonmix_0.1.tar.gz](https://github.com/JuJacques/MultivariateCountData/blob/main/poissonmix_0.1.tar.gz). 
 
 
 # Acknowlegements
