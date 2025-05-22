@@ -9,10 +9,11 @@ library("e1071")
 library("plotly")
 library("seriation")
 library("magick")
-```
-
-```{r functions, message = FALSE}
-source("./functions/poissonmix.R")
+library("ggplot2")
+library("poissonmix")
+library("gridExtra")
+library("dplyr")
+library("tidyr")
 ```
 
 # Introduction
@@ -59,10 +60,20 @@ loops recorded each hour for the three medalists.
 #| fig-cap: "Number of loops per hour for the three medalists."
 load("X24H.Rdata")
 tmp <- sort(as.vector(rowSums(x)), decreasing = TRUE, index.return = TRUE)
-matplot(t(matrix(1:24, 3, 24,byrow = TRUE)), t(x[tmp$ix[1:3], 1:24]),type = "o",lty = 3,xlab = 'Hours', ylab = "Number of loops", xaxt = "n", yaxt = "n", pch = 1:3)
-axis(1, at = seq(6, 24, 6),labels = seq(6, 24, 6))
-axis(2, at = 6:9, labels = 6:9)
-legend("topright", 1:3, col = 1:3, legend=c("Gold medal", "Silver medal", "Bronze medal"), pch = 1:3, cex = 0.8)
+df <- data.frame(
+  Hours = rep(1:24, 3),
+  Value = as.vector(t(x[tmp$ix[1:3], 1:24])),
+  Medal = rep(c("Gold medal", "Silver medal", "Bronze medal"), each = 24)
+)
+ggplot(df, aes(x = Hours, y = Value, color = Medal, group = Medal)) +
+  geom_line() +
+  geom_point() +
+  scale_x_continuous(breaks = seq(6, 24, 6)) +
+  scale_y_continuous(breaks = 6:9) +
+  labs(x = 'Hours', y = "Number of loops") +
+  scale_color_manual(values = c("Gold medal" = "gold", "Silver medal" = "gray", "Bronze medal" = "brown")) +
+  theme_minimal() +
+  theme(legend.position = "topright")
 ```
 
 We can see among these three runners different strategies, the second placed
@@ -410,7 +421,16 @@ in @fig-BIC.
 #| warning: false
 #| fig-align: "center"
 #| fig-cap: "Bayesian Information Criterion (BIC) for the independent Poisson mixture model."
-plot(x = 1:Gmax, y = fit_all$BIC, type = "o", xlab = "G", ylab = "BIC")
+df <- data.frame(
+  G = 1:Gmax,
+  BIC = fit_all$BIC
+)
+ggplot(df, aes(x = G, y = BIC)) +
+  geom_line() +
+  geom_point() +
+  labs(x = "G", y = "BIC") +
+  theme(axis.text.x = element_text(size = 12),
+        axis.text.y = element_text(size = 12)) 
 ```
 
 The model with the highest BIC has $G=$ `r fit_all$bestfit$G` components
@@ -651,37 +671,94 @@ knitr::kable(res)
 #| message: false
 #| fig-align: "center"
 #| fig-cap: "Distribution of the ARI differences with the model with the true clustering variables, for the model with the selected variables and the model with all variables."
-par(mfrow = c(1, 3))
-par(mar = c(6, 2, 2, 2))
-ARI=matrix(c(ARI1[,1]-ARI1[,3],ARI1[,2]-ARI1[,3]),ncol=2,byrow=FALSE)
-colnames(ARI)<-c("Selected var. - True var.","All var. - True var.")
-boxplot(ARI, cex.axis=0.7,ylim=c(-.5,.2),las = 2,main='Scenario 1',xlab='');abline(h=0,col=2,las = 2)
-ARI=matrix(c(ARI2[,1]-ARI2[,3],ARI2[,2]-ARI2[,3]),ncol=2,byrow=FALSE)
-colnames(ARI)<-c("Selected var. - True var.","All var. - True var.")
-boxplot(ARI, cex.axis=0.7,ylim=c(-.5,.2),las = 2,main='Scenario 21',xlab='');abline(h=0,col=2,las = 2)
-ARI=matrix(c(ARI3[,1]-ARI3[,3],ARI3[,2]-ARI3[,3]),ncol=2,byrow=FALSE)
-colnames(ARI)<-c("Selected var. - True var.","All var. - True var.")
-boxplot(ARI, cex.axis=0.7,ylim=c(-.5,.2),las = 2,main='Scenario 3',xlab='');abline(h=0,col=2,las = 2)
-par(mfrow = c(1, 1))
+ARI11 <- matrix(c(ARI1[,1] - ARI1[,3], ARI1[,2] - ARI1[,3]), ncol = 2, byrow = FALSE)
+colnames(ARI11) <- c("Selected var. - True var.", "All var. - True var.")
+ARI1_long <- data.frame(
+  Comparison = rep(c("Selected var. - True var.", "All var. - True var."), each = nrow(ARI11)),
+  Value = as.vector(ARI11)
+)
+ARI22 <- matrix(c(ARI2[,1] - ARI2[,3], ARI2[,2] - ARI2[,3]), ncol = 2, byrow = FALSE)
+colnames(ARI22) <- c("Selected var. - True var.", "All var. - True var.")
+ARI2_long <- data.frame(
+  Comparison = rep(c("Selected var. - True var.", "All var. - True var."), each = nrow(ARI22)),
+  Value = as.vector(ARI22)
+)
+ARI33 <- matrix(c(ARI3[,1] - ARI3[,3], ARI3[,2] - ARI3[,3]), ncol = 2, byrow = FALSE)
+colnames(ARI33) <- c("Selected var. - True var.", "All var. - True var.")
+ARI3_long <- data.frame(
+  Comparison = rep(c("Selected var. - True var.", "All var. - True var."), each = nrow(ARI33)),
+  Value = as.vector(ARI33)
+)
+plot1 <- ggplot(ARI1_long, aes(x = Comparison, y = Value, fill = Comparison)) +
+  geom_boxplot() +
+  geom_hline(yintercept = 0, color = "red") +
+  labs(title = "Scenario 1", x = "", y = "") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1,size = 12),
+        axis.ticks.x = element_blank(),
+        axis.text.y = element_text(size = 12),
+        legend.position = "none") +
+  ylim(-0.5, 0.2)
+plot2 <- ggplot(ARI2_long, aes(x = Comparison, y = Value, fill = Comparison)) +
+  geom_boxplot() +
+  geom_hline(yintercept = 0, color = "red") +
+  labs(title = "Scenario 2", x = "", y = "") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1,size = 12),
+        axis.ticks.x = element_blank(),
+        axis.text.y = element_text(size = 12),
+        legend.position = "none") +
+  ylim(-0.5, 0.2)
+plot3 <- ggplot(ARI3_long, aes(x = Comparison, y = Value, fill = Comparison)) +
+  geom_boxplot() +
+  geom_hline(yintercept = 0, color = "red") +
+  labs(title = "Scenario 3", x = "", y = "") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1,size = 12),
+        axis.ticks.x = element_blank(),
+        axis.text.y = element_text(size = 12),
+        legend.position = "none") +
+  ylim(-0.5, 0.2)
+grid.arrange(plot1, plot2, plot3, ncol = 3)
 ```
+
 
 Finally @fig-all2 plots the histogram of the difference of ARI with the selected variables and with all the variables.
 This plot illustrates the interest of variable selection on the clustering results, and indeed, for all the scenarios, the ARI is better with the selected variables than when using all the variables. 
-```{r plotall2}
+```{r plotall2, warning=FALSE}
 #| label: fig-all2
 #| echo: false
 #| message: false
 #| fig-align: "center"
 #| fig-cap: "Distribution of the ARI differences for the model with the selected variables and the model with all variables."
-par(mfrow = c(1, 3))
-par(mar = c(6, 2, 2, 2))
-hist(ARI1[, 1] - ARI1[, 2], xlab = 'ARI differences',main='Scenario 1',xlim=c(-.1,.5))
-abline(v=0,col=2)
-hist(ARI2[, 1] - ARI2[, 2], xlab = 'ARI differences',main='Scenario 2',xlim=c(-.1,.5))
-abline(v=0,col=2)
-hist(ARI3[, 1] - ARI3[, 2], xlab = 'ARI differences',main='Scenario 3',xlim=c(-.1,.5))
-abline(v=0,col=2)
-par(mfrow = c(1, 1))
+ARI1_df=data.frame(ARI1)
+ARI1_df$difference <- ARI1_df[, 1] - ARI1_df[, 2]
+ARI2_df=data.frame(ARI2)
+ARI2_df$difference <- ARI2_df[, 1] - ARI2_df[, 2]
+ARI3_df=data.frame(ARI3)
+ARI3_df$difference <- ARI3_df[, 1] - ARI3_df[, 2]
+plot1<-ggplot(ARI1_df, aes(x = difference)) +
+  geom_histogram(bins = 10, fill = "blue", alpha = 0.7) +
+  geom_vline(aes(xintercept = 0), color = "red", linetype = "dashed", linewidth = 1) +
+  labs(x = 'ARI differences', y = 'Frequency', title = 'Scenario 1') +
+  xlim(-0.1, 0.5) +
+  theme(axis.text.x = element_text(size = 12),
+        axis.text.y = element_text(size = 12),
+        )
+plot2<-ggplot(ARI2_df, aes(x = difference)) +
+  geom_histogram(bins = 10, fill = "blue", alpha = 0.7) +
+  geom_vline(aes(xintercept = 0), color = "red", linetype = "dashed", linewidth = 1) +
+  labs(x = 'ARI differences', y = 'Frequency', title = 'Scenario 2') +
+  xlim(-0.1, 0.5) +
+  theme(axis.text.x = element_text(size = 12),
+        axis.text.y = element_text(size = 12),
+        )
+plot3<-ggplot(ARI3_df, aes(x = difference)) +
+  geom_histogram(bins = 10, fill = "blue", alpha = 0.7) +
+  geom_vline(aes(xintercept = 0), color = "red", linetype = "dashed", linewidth = 1) +
+  labs(x = 'ARI differences', y = 'Frequency', title = 'Scenario 3') +
+  xlim(-0.1, 0.5) +
+  theme(axis.text.x = element_text(size = 12),
+        axis.text.y = element_text(size = 12),
+        )
+grid.arrange(plot1, plot2, plot3, ncol = 3)
 ```
 
 
@@ -731,7 +808,16 @@ The optimal number of clusters `r fit$bestfit$G` has been chosen inside the step
 #| fig-cap: "Bayesian Information Criterion (BIC) for the independent Poisson mixture model with the seleceted variables."
 Gmax <- 10
 fit_all <- poissonmix_all(as.matrix(x[,fit$jchosen]), G = 1:Gmax)
-plot(x = 1:Gmax, y = fit_all$BIC, type = "o", xlab = "G", ylab = "BIC")
+df <- data.frame(
+  G = 1:Gmax,
+  BIC = fit_all$BIC
+)
+ggplot(df, aes(x = G, y = BIC)) +
+  geom_line() +
+  geom_point() +
+  labs(x = "G", y = "BIC") +
+  theme(axis.text.x = element_text(size = 12),
+        axis.text.y = element_text(size = 12)) 
 ```
 
 In order to illustrate the results, we plot the cluster means according
@@ -749,18 +835,11 @@ redundant ("R") or useful (the label is then the cluster number).
 ```{r plotrunning, echo=FALSE, fig.align='center', cache = TRUE}
 #| label: fig-Running-result1
 #| fig-cap: "Cluster means and usefulness of the variables."
-matplot(fit$jchosen, t(fit$bestfit$lambda), xlab = 'Hours', ylab = "Number of laps", xaxt = "n",yaxt = "n", xlim = c(1, P), ylim = range(x[,-16]))
-axis(1, at = seq(6, 24, 6),labels = seq(6, 24, 6))
-axis(2, at = 0:9, labels = 0:9)
-abline(v = fit$jchosen, col = "lightgray", lty = 3)
-matplot(fit$jchosen, t(fit$bestfit$lambda), type = "p", add = TRUE)
-
 G <- fit$bestfit$G
 Z <- fit$bestfit$Z
 x <- as.matrix(x)
 xmeans <- t(Z) %*% x / apply(Z, 2, sum)
 jremove <- setdiff(1:P, fit$jchosen)
-
 vartype <- rep(NA, P)
 vartype[fit$jchosen] <- "Clustering"
 for (j in jremove)
@@ -777,14 +856,40 @@ for (j in jremove)
   if (length(coef(fitglms)) > 1)
   {
     vartype[j] <- "Redundant"
-    text(rep(j, G), xmeans[, j], rep("R", G), col = 1:G)
+#    text(rep(j, G), xmeans[, j], rep("R", G), col = 1:G)
   } else {
     vartype[j] <- "Irrelevant"
-    text(rep(j, G), xmeans[, j], rep("I", G), col = 1:G)
-    
+#    text(rep(j, G), xmeans[, j], rep("I", G), col = 1:G)
   }
 }
-matplot(1:P, t(xmeans), col = 1:G, type = "c", lty = 1, add = TRUE)
+# Supposons que fit$jchosen, fit$bestfit$lambda, xmeans, etc. existent déjà
+# On crée les données pour le premier matplot (fit$jchosen vs t(lambda))
+lambda_df <- as.data.frame(t(fit$bestfit$lambda))
+lambda_df$Hour <- fit$jchosen
+lambda_long <- pivot_longer(lambda_df, cols = -Hour, names_to = "Cluster", values_to = "Laps")
+# Graphique de base : courbes + points
+p <- ggplot(lambda_long, aes(x = Hour, y = Laps, color = Cluster, group = Cluster)) +
+  scale_x_continuous(breaks = seq(6, 24, 6)) +
+  scale_y_continuous(breaks = 0:9) +
+  labs(x = "Hours", y = "Number of laps") +
+   theme(axis.text.x = element_text(size = 12),
+        axis.text.y = element_text(size = 12)) 
+# Ajout des lignes verticales grises
+p <- p + geom_vline(xintercept = fit$jchosen, linetype = "dotted", color = "lightgray")
+# Préparation des xmeans pour marquage "R"/"I"
+xmeans_df <- as.data.frame(t(xmeans))
+colnames(xmeans_df) <- as.character(1:G)
+xmeans_df$Variable <- 1:nrow(xmeans_df)
+xmeans_long <- pivot_longer(xmeans_df, cols = -Variable, names_to = "Cluster", values_to = "Mean")
+# Annoter avec R/I pour les variables non sélectionnées
+xmeans_annot <- xmeans_long %>%
+  filter(Variable %in% jremove) %>%
+  mutate(Label = ifelse(vartype[Variable] == "Redundant", "R", "I"))
+p <- p + geom_text(data = xmeans_annot, aes(x = Variable, y = Mean, label = Label, color = Cluster), size = 3, vjust = -0.2, show.legend = FALSE)
+# Ajouter les moyennes xmeans (comme dans le dernier matplot)
+p <- p + geom_line(data = xmeans_long, aes(x = Variable, y = Mean, group = Cluster, color = Cluster), linetype = "solid")
+# Afficher le graphique
+print(p)
 ```
 The variables discriminate the clusters pacing strategies of
 the runners are the number of laps covered during the last two thirds of
@@ -797,30 +902,59 @@ clustering information, and even no information at all for the number of laps co
 ```{r ARIrunning, echo = FALSE, message = FALSE, warning=FALSE, fig.align='center'}
 #| label: fig-Running-result3
 #| fig-cap: "Density maps per cluster"
-ylim <- range(x)
-xlim <- c(1, P)
-xvec <- 1:P
+heatmap_data <- list()
+Pchosen <- length(fit$jchosen)
 yvec <- min(x):max(x)
-xygrid <- expand.grid(xvec, yvec)
-
-par(mfrow = c(3, 2))
-par(mar = c(2.5, 3, 1.5, 1))
-par(mgp = c(1.3, .4, 0))
-for (g in 1:fit$bestfit$G)
-{
-  zmat <- matrix(NA, P, length(yvec))
-  Pchosen <- length(fit$jchosen)
-  for (p in 1:Pchosen)
-  {
-    zmat[fit$jchosen[p], ] <- dpois(yvec, fit$bestfit$lambda[g, p])
+for (g in 1:fit$bestfit$G) {
+  for (p in 1:P) {
+    if (sum(p==fit$jchosen)>1){
+      lambda <- fit$bestfit$lambda[g, p]
+      z <- dpois(yvec, lambda)
+      heatmap_data[[length(heatmap_data) + 1]] <- data.frame(
+      Hour = fit$jchosen[which(p==fit$jchosen)],
+      Laps = yvec,
+      Density = z,
+      Cluster = factor(g)
+    )
+    }
+    else
+      z =0
+      heatmap_data[[length(heatmap_data) + 1]] <- data.frame(
+      Hour = p,
+      Laps = yvec,
+      Density = z,
+      Cluster = factor(g)
+    )
   }
-  rownames(zmat) <- 1:P
-  colnames(zmat) <- yvec
-  image(xvec, yvec, zmat, xlab = "Hour", ylab = "Laps", main = paste("Cluster ", g, sep = "", collapse = ""))
-  matplot(t(x[fit$bestfit$classification == g, ]), xlim = xlim, ylim = ylim, type = "l", add = TRUE, col = "lightgray", lty = 1)
+  for (p in 1:length(fit$jchosen)) {
+    lambda <- fit$bestfit$lambda[g, p]
+    z <- dpois(yvec, lambda)
+    heatmap_data[[length(heatmap_data) + 1]] <- data.frame(
+      Hour = fit$jchosen[p],
+      Laps = yvec,
+      Density = z,
+      Cluster = factor(g)
+    )
+  }
 }
-par(mfrow = c(1, 1))
+heatmap_df <- do.call(rbind, heatmap_data)
+colnames(x)=1:P
+observed_data <- as.data.frame(x)
+observed_data$Cluster <- factor(fit$bestfit$classification)
+observed_data$id <- seq_len(nrow(observed_data))
+observed_long <- observed_data %>%
+  pivot_longer(cols = -c(id, Cluster), names_to = "Hour", values_to = "Laps") %>%
+  mutate(Hour = as.numeric(Hour))
+ggplot() +
+  geom_tile(data = heatmap_df, aes(x = Hour, y = Laps, fill = Density)) +
+  scale_fill_gradient(low = "white", high = "blue") +
+  geom_line(data = observed_long, aes(x = Hour, y = Laps, group = id), 
+            color = "lightgray", alpha = 0.5) +
+  facet_wrap(~ Cluster, ncol = 2) +
+  labs(x = "Hour", y = "Laps", title = "Poisson Densities with Observed Data per Cluster") +
+  theme_minimal()
 ```
+
 
 Cluster 5  are clearly the most efficient runners. Looking at the running
 strategy in @fig-Running-result1 and @fig-Running-result3, we can see that they start as runners
@@ -839,8 +973,15 @@ Finally, @fig-Running-result2 shows boxplots of the total number of loops covere
 ```{r ARIrunning, echo = FALSE, message = FALSE, warning=FALSE, fig.align='center'}
 #| label: fig-Running-result2
 #| fig-cap: "Number of loops covered by the runners of each clusters."
-tmp <- sort(as.vector(rowSums(x)), decreasing = TRUE, index.return = TRUE)
-boxplot(rowSums(x) ~ map(Z), xlab = 'Cluster', ylab = 'Total number of laps')
+df <- data.frame(
+  total_laps = rowSums(x),
+  cluster = as.factor(map(Z))
+)
+ggplot(df, aes(x = cluster, y = total_laps)) +
+  geom_boxplot() +
+  xlab("Cluster") +
+  ylab("Total number of laps") +
+  theme_minimal()
 ```
 
 # Discussion
