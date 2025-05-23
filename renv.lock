@@ -413,6 +413,12 @@
       ],
       "Hash": "6b567375113ceb7d9f800de4dd42218e"
     },
+    "extraDistr": {
+      "Package": "extraDistr",
+      "Version": "1.10.0",
+      "Source": "Repository",
+      "Repository": "CRAN"
+    },
     "fansi": {
       "Package": "fansi",
       "Version": "1.0.6",
